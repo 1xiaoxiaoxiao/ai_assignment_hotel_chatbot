@@ -1,11 +1,18 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
 import re
+import os
 import nltk
+from joblib import load
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# NLTK setup
+nltk.data.path.append(os.path.join(os.path.dirname(__file__), 'nltk_data'))
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-from joblib import load
 
-# Load stopwords & lemmatizer
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
@@ -18,10 +25,11 @@ def preprocess_text(text):
     tokens = [lemmatizer.lemmatize(word) for word in tokens]
     return ' '.join(tokens)
 
-# Load trained model & vectorizer
+# Load trained model and vectorizer
 model = load('svm_intent_model.joblib')
 vectorizer = load('tfidf_vectorizer_SVM.joblib')
 
+# Responses dictionary
 responses = {
     "ask_room_price": "Our rooms start from RM180 per night.",
     "ask_availability": "We currently have several rooms available.",
@@ -40,4 +48,13 @@ def chatbot_reply_svm(user_input):
     cleaned = preprocess_text(user_input)
     vector = vectorizer.transform([cleaned])
     intent = model.predict(vector)[0]
-    return responses.get(intent, "Sorry, I don't understand. Could you rephrase?")
+    return responses.get(intent, f"Sorry, I predicted the intent '{intent}', but I don't have a specific response for that yet. Please rephrase your question.")
+
+# Streamlit UI
+st.title("Hotel Chatbot (SVM)")
+
+user_input = st.text_input("Enter your message:")
+
+if user_input:
+    response = chatbot_reply_svm(user_input)
+    st.markdown(f"**Chatbot:** {response}")
