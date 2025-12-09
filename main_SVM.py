@@ -1,8 +1,8 @@
 # %%
 #install necessary libraries (assuming the initial block has been run)
-!pip install scikit-learn
-!pip install pandas
-!pip install nltk
+pip install scikit-learn
+pip install pandas
+pip install nltk
 
 # download necessary nltk resources (assuming the initial block has been run)
 import nltk
@@ -309,6 +309,7 @@ predicted_response = chatbot_reply_svm(test_input, svm_model, vectorizer, respon
 
 print(f"User Input: {test_input}")
 print(f"Chatbot Reply: {predicted_response}")
+
 
 
 
