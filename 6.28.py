@@ -1,6 +1,6 @@
 # =====================================================
 # Hotel Customer Support Chatbot (SVM + spaCy) for Streamlit
-# Auto-download spaCy model if missing
+# Cloud-friendly: uses requirements.txt for spaCy model
 # =====================================================
 
 import streamlit as st
@@ -12,27 +12,16 @@ from sklearn.svm import LinearSVC
 from joblib import load
 import random
 import time
-import subprocess
-import sys
 
 # -------------------------
 # 1. Configuration
 # -------------------------
-CONFIDENCE_THRESHOLD = 0.75  # For SVM, pseudo-confidence
+CONFIDENCE_THRESHOLD = 0.75  # For SVM pseudo-confidence
 
 # -------------------------
-# 2. Load spaCy Model with Auto-Download and Cache
+# 2. Load spaCy Model (Cloud-friendly)
 # -------------------------
-@st.cache_resource
-def load_spacy_model():
-    try:
-        return spacy.load("en_core_web_sm")
-    except OSError:
-        with st.spinner("Downloading spaCy model en_core_web_sm..."):
-            subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
-        return spacy.load("en_core_web_sm")
-
-nlp = load_spacy_model()
+nlp = spacy.load("en_core_web_sm")  # model installed via requirements.txt
 
 # -------------------------
 # 3. Text Preprocessing
@@ -94,13 +83,12 @@ def predict_intent(user_input):
     cleaned = preprocess_text(user_input)
     vec = vectorizer.transform([cleaned])
 
-    # For SVM, we can use decision_function as pseudo-confidence
     decision_scores = svm_model.decision_function(vec)
     predicted_index = decision_scores.argmax() if len(decision_scores.shape) > 1 else 0
     if len(decision_scores.shape) > 1:
         confidence_score = max(decision_scores[0])
     else:
-        confidence_score = abs(decision_scores[0])  # fallback for single-class
+        confidence_score = abs(decision_scores[0])
 
     intent_name = svm_model.classes_[predicted_index]
     response = responses.get(intent_name, "Sorry, I do not understand your request.")
@@ -119,7 +107,7 @@ def main():
     st.title("🏨 Astra Imperium Hotel Chatbot (SVM + spaCy)")
     st.caption(f"Confidence Threshold: {CONFIDENCE_THRESHOLD}")
 
-    # --- Initialize Chat History ---
+    # Initialize Chat History
     if "messages" not in st.session_state:
         st.session_state.messages = []
         greeting = responses.get("greeting", "Hello! How can I assist you?")
@@ -128,14 +116,14 @@ def main():
     if "pending_input" not in st.session_state:
         st.session_state.pending_input = None
 
-    # --- Display Chat History ---
+    # Display Chat History
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             if message["role"] == "assistant" and "intent" in message:
                 st.caption(f"Intent: **{message['intent']}** | Confidence: **{message['confidence']}** | Time: **{message['time']:.4f}s**")
             st.markdown(message["content"])
 
-    # --- Suggested Questions Buttons ---
+    # Suggested Questions
     if "random_intents" not in st.session_state:
         st.session_state.random_intents = random.sample(SUGGESTED_INTENTS, min(4, len(SUGGESTED_INTENTS)))
 
@@ -151,7 +139,7 @@ def main():
                     del st.session_state.random_intents
                     st.rerun()
 
-    # --- Handle User Input ---
+    # Handle User Input
     user_input = None
     if st.session_state.pending_input:
         user_input = st.session_state.pending_input
