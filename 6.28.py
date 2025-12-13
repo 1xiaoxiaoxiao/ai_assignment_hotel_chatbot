@@ -1,5 +1,6 @@
 # =====================================================
 # Hotel Customer Support Chatbot (SVM + spaCy) for Streamlit
+# Auto-download spaCy model if missing
 # =====================================================
 
 import streamlit as st
@@ -11,16 +12,27 @@ from sklearn.svm import LinearSVC
 from joblib import load
 import random
 import time
+import subprocess
+import sys
 
 # -------------------------
 # 1. Configuration
 # -------------------------
-CONFIDENCE_THRESHOLD = 0.75  # For SVM, this can be used if we use decision_function
+CONFIDENCE_THRESHOLD = 0.75  # For SVM, pseudo-confidence
 
 # -------------------------
-# 2. Load spaCy Model
+# 2. Load spaCy Model with Auto-Download and Cache
 # -------------------------
-nlp = spacy.load("en_core_web_sm")
+@st.cache_resource
+def load_spacy_model():
+    try:
+        return spacy.load("en_core_web_sm")
+    except OSError:
+        with st.spinner("Downloading spaCy model en_core_web_sm..."):
+            subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+        return spacy.load("en_core_web_sm")
+
+nlp = load_spacy_model()
 
 # -------------------------
 # 3. Text Preprocessing
